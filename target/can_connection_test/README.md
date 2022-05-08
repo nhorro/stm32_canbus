@@ -9,7 +9,7 @@ Instrucciones
 -------------
 
 1. Importar proyecto en [Mbed Studio](https://os.mbed.com/studio/). Probado con MBedOS 6.
-2. Conectar HW de prueba.
+2. [Conectar HW de prueba](../../doc/hw_setup.md).
 3. Grabar firmware.
 4. Monitorear salida en consola de debug. Se debe ver:
 
