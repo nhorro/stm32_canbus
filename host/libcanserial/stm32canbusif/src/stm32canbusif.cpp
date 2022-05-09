@@ -36,31 +36,40 @@ void stm32canbus_serialif::read_handler( const boost::system::error_code& error,
     }
     else 
     {
-        std::string result = response_get(bytes_transferred);        
-        std::cout << result;			
-        buffer.consume(bytes_transferred);
-        read_until_terminator();
+        can_message_event ev;
+        std::cout << bytes_transferred << ", " << sizeof(can_message_event) << std::endl;
+
+        //std::memcpy(&ev,  boost::asio::buffer_cast<const char*>(buffer.data()), bytes_transferred);        
+        //std::copy_n(boost::asio::buffers_begin(buffer.data()), bytes_transferred, back_inserter(rx_buffer));
+
+        //std::string result = response_get(bytes_transferred);        
+        //std::cout << result;			
+        //buffer.consume(bytes_transferred);
+        read_some();
     }
 }
 
-void stm32canbus_serialif::read_until_terminator()
+void stm32canbus_serialif::read_some()
 {
-    boost::asio::async_read_until(port, buffer, "\n",
-                                boost::bind( &stm32canbus_serialif::read_handler, this,
-                                            boost::asio::placeholders::error, 
-                                            boost::asio::placeholders::bytes_transferred)
-                                );
+    port.async_read_some(boost::asio::buffer(rx_buffer,BUFSIZE), boost::bind( &stm32canbus_serialif::read_handler, this,
+                                             boost::asio::placeholders::error, 
+                                            boost::asio::placeholders::bytes_transferred));
 }
 
-std::string stm32canbus_serialif::response_get(std::size_t length) 
-{
-    std::string result;
-    std::copy_n(boost::asio::buffers_begin(buffer.data()), length, back_inserter(result));
-    return result;
-}
 
 void stm32canbus_serialif::run()
 {
-    read_until_terminator(); 
+    read_some(); 
     io.run();
+}
+
+void stm32canbus_serialif::feed(char c)
+{
+
+
+    switch(curr_state)
+    {
+        case EXPECTING_SYNC
+    }
+
 }

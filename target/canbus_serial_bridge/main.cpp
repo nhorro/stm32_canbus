@@ -25,13 +25,14 @@
 
 struct can_message_event
 {   
-    uint16_t sync_mark;     // 0xEB90
+    uint16_t sop_mark;     // 0xEB90
     uint8_t device_id;
     uint8_t event_type;     // Por ahora un ùnico tipo de evento, se pueden agregar otros: status, error, etc.    
     uint32_t canid;
     uint8_t len;
     uint8_t data[8];
-    uint16_t crc;          // A ser usado más adelante.
+    uint16_t crc;          // A ser usado más adelante.    
+    uint16_t eop_mark;          // A ser usado más adelante.    
 };
  
 /* Led indicador de transmisión en canal 1 */
@@ -58,6 +59,24 @@ CAN can[2]{
 /* Interfaz serie con PC */
 static BufferedSerial serial_port(USBTX, USBRX);
 
+
+/* Enviar mensaje SYNC desde CAN 1. */
+void can1_send_sync_message() 
+{    
+    const uint32_t canid = 1337;
+    char data[2];
+    data[0] = 0;
+    data[1] = sync_counter;
+    can[0].write(CANMessage(canid, data, 2));
+
+    // Incrementar contador con rollover en 19.
+    sync_counter++;
+    sync_counter%=19;
+    
+    // Led indicador
+    led1 = !led1;
+}
+
 /* Leer mensaje de CAN2 e imprimir en pantalla */
 void can_read_message(int device_id)
 {
@@ -67,7 +86,8 @@ void can_read_message(int device_id)
         led2 = !led2;    
 
         can_message_event ev;
-        ev.sync_mark = 0xEB90;
+        ev.sop_mark = 0xEB90;
+        ev.eop_mark = 0x9861;
         ev.event_type = 1;
         ev.canid = msg.id;
         ev.len = msg.len;
@@ -134,8 +154,8 @@ int main()
     can_event_thread.start(callback(&can_dev_queue, &EventQueue::dispatch_forever));
 
     /* Programación de mensajes SYNC. */
-    //Ticker can_sync_ticker;
-    //can_sync_ticker.attach(can_dev_queue.event(&can1_send_sync_message), 50ms);
+    Ticker can_sync_ticker;
+    can_sync_ticker.attach(can_dev_queue.event(&can1_send_sync_message), 50ms);
        
     wait_us(osWaitForever);
 }

@@ -30,7 +30,7 @@ DigitalOut led2(LED2);
 char sync_counter = 0;
 
 /* Cola de eventos de impresiòn (prioridad baja-media) */
-EventQueue printf_queue;
+//EventQueue printf_queue;
 
 /* Cola de eventos de acceso a dispositivo CAN (prioridad alta) */
 EventQueue can_dev_queue;
@@ -80,8 +80,8 @@ int main()
     can2.attach(can_dev_queue.event(&can2_read_message), CAN::IrqType::RxIrq);
 
     /* Hilo de baja prioridad para imprimir mensajes. */    
-    Thread printf_thread(osPriorityNormal);
-    printf_thread.start(callback(&printf_queue, &EventQueue::dispatch_forever));
+    //Thread printf_thread(osPriorityNormal);
+    //printf_thread.start(callback(&printf_queue, &EventQueue::dispatch_forever));
 
     /* Hilo de alta prioridad para manejo de dispositivos. */
     Thread can_event_thread(osPriorityHigh);

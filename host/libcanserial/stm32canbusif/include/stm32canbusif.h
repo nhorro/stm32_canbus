@@ -4,6 +4,7 @@
 #include <atomic>
 #include <thread>
 #include <fstream>
+#include <array>
 
 #include <unistd.h>
 
@@ -14,14 +15,15 @@
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
 
-// To be used later
 struct can_message_event
-{
-    enum event_type {
-        rx_message
-    };
+{   
+    uint16_t sync_mark;     // 0xEB90
     uint8_t device_id;
+    uint8_t event_type;     // Por ahora un ùnico tipo de evento, se pueden agregar otros: status, error, etc.    
+    uint32_t canid;
+    uint8_t len;
     uint8_t data[8];
+    uint16_t crc;          // A ser usado más adelante.
 };
 
 
@@ -30,6 +32,7 @@ struct can_message_event
  */
 class stm32canbus_serialif {
 public:
+    static constexpr size_t BUFSIZE = 64;
     /**
      * @brief Construct a new stm32canbus serialif object.
      * 
@@ -51,12 +54,15 @@ public:
 private:
     boost::asio::io_service io;
     boost::asio::serial_port port;
-    boost::asio::streambuf buffer;
+    //boost::asio::streambuf buffer;
+    std::array<char,BUFSIZE> rx_buffer;
     std::thread comm_thread;
     std::atomic<bool> keep_running;
     
     void read_handler( const boost::system::error_code& error, size_t bytes_transferred);
-    void read_until_terminator();
+    void read_some();
     std::string response_get(std::size_t length);
     void run();
+
+    void feed(char c);
 };
