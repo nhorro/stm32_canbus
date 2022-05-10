@@ -26,7 +26,8 @@ void stm32canbus_serialif::stop()
     port.cancel();
     comm_thread.join();        
 }
-   
+
+
 
 void stm32canbus_serialif::read_handler( const boost::system::error_code& error, size_t bytes_transferred)
 {
@@ -39,6 +40,11 @@ void stm32canbus_serialif::read_handler( const boost::system::error_code& error,
         can_message_event ev;
         std::cout << bytes_transferred << ", " << sizeof(can_message_event) << std::endl;
 
+        for(size_t i=0;i<bytes_transferred;i++)
+        {
+            ::protocol::packet_decoder::feed(rx_buffer[i]);
+        }
+
         //std::memcpy(&ev,  boost::asio::buffer_cast<const char*>(buffer.data()), bytes_transferred);        
         //std::copy_n(boost::asio::buffers_begin(buffer.data()), bytes_transferred, back_inserter(rx_buffer));
 
@@ -49,6 +55,8 @@ void stm32canbus_serialif::read_handler( const boost::system::error_code& error,
     }
 }
 
+
+
 void stm32canbus_serialif::read_some()
 {
     port.async_read_some(boost::asio::buffer(rx_buffer,BUFSIZE), boost::bind( &stm32canbus_serialif::read_handler, this,
@@ -57,19 +65,31 @@ void stm32canbus_serialif::read_some()
 }
 
 
+
 void stm32canbus_serialif::run()
 {
     read_some(); 
     io.run();
 }
 
-void stm32canbus_serialif::feed(char c)
+
+
+// Packet protocol
+void stm32canbus_serialif::handle_packet(const uint8_t* payload, uint8_t n)
 {
+    
+}
 
 
-    switch(curr_state)
-    {
-        case EXPECTING_SYNC
-    }
 
+void stm32canbus_serialif::set_error(error_code ec)
+{
+    // Por ahora no hacer nada
+}
+
+
+
+void stm32canbus_serialif::handle_connection_lost()
+{
+    // Por ahora no hacer nada
 }

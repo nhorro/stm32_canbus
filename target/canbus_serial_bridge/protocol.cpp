@@ -6,10 +6,6 @@
 
 namespace protocol {
 
-using std::chrono::duration_cast;
-using std::chrono::milliseconds;
-using std::chrono::system_clock;
-
 packet_decoder::packet_decoder()
 	:
 		state_handlers {
@@ -132,7 +128,7 @@ void packet_decoder::handle_pkt_state_expecting_terminator()
 {
 	if (PACKET_TERMINATOR_CHAR == this->last_received_char)
 	{
-		this->last_received_packet_t0 = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+		this->last_received_packet_t0 = std::chrono::duration_cast<std::chrono::milliseconds>(this->timer.elapsed_time()).count();
 		this->handle_packet(this->received_payload_buffer,
 				this->received_payload_index);
 	}
@@ -154,7 +150,7 @@ void packet_decoder::feed(uint8_t c)
 void packet_decoder::check_timeouts()
 {
 	// 1. Obtener tiempo actual.
-	uint32_t t1 = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+	uint32_t t1 = std::chrono::duration_cast<std::chrono::milliseconds>(this->timer.elapsed_time()).count();
 
 	// Verificar tiempo que transcurrió desde que se comenzo el procesamiento del paquete.
     // Si se excede, reiniciar FSM.
@@ -166,22 +162,22 @@ void packet_decoder::check_timeouts()
   	}
 
   	// Verificar tiempo desde que se recibió un heartbeat.
-	/*
+    /*
 	dt = this->last_received_packet_t0 > t1 ? 
 		1 + this->last_received_packet_t0 + ~t1 : t1 - this->last_received_packet_t0;
 	if(dt>HEARTBEAT_TIMEOUT_IN_MS)
 	{
     	this->handle_connection_lost();
   	}
-	*/
-
+    */
 }
 
 void packet_decoder::reset()
-{    
+{
+    this->timer.start();
 	this->current_state = pkt_state::pkt_state_idle;
 	this->received_payload_index = 0;
-	this->start_of_packet_t0 = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+	this->start_of_packet_t0 = std::chrono::duration_cast<std::chrono::milliseconds>(this->timer.elapsed_time()).count();
 	this->crc16 = 0;
 }
 

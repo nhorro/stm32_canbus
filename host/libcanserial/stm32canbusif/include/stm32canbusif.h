@@ -15,6 +15,8 @@
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
 
+#include "protocol.h"
+
 struct can_message_event
 {   
     uint16_t sync_mark;     // 0xEB90
@@ -30,7 +32,7 @@ struct can_message_event
 /**
  * @brief Class to control STM32 CAN interface through serial port
  */
-class stm32canbus_serialif {
+class stm32canbus_serialif : private protocol::packet_decoder {
 public:
     static constexpr size_t BUFSIZE = 64;
     /**
@@ -64,5 +66,8 @@ private:
     std::string response_get(std::size_t length);
     void run();
 
-    void feed(char c);
+    // Packet protocol
+	void handle_packet(const uint8_t* payload, uint8_t n) override;
+	void set_error(error_code ec) override;
+	void handle_connection_lost() override;
 };
