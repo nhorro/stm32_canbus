@@ -114,7 +114,7 @@ public:
      * @param payload puntero inmutable a los bytes del paquete.
      * @param n tamaño del paquete en bytes.
     */
-	virtual void handle_packet(const uint8_t* payload, uint8_t n) = 0;
+	virtual void handle_packet(const uint8_t* payload, size_t n) = 0;
 
     /** Establecer un código de error de aplicación luego de procesar el paquete (0=éxito).
     */

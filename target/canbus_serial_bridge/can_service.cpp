@@ -31,7 +31,7 @@ can_service::can_service()
 void can_service::setup()
 {
     // 9600-8-N-1
-    serial_port.set_baud(9600);
+    serial_port.set_baud(115200);
     serial_port.set_format(
         /* bits */ 8,
         /* parity */ BufferedSerial::None,
@@ -80,28 +80,18 @@ void can_service::can_read_message(int device_id)
     {             
         led2 = !led2;    
 
-        get_payload_buffer()[0] = 0x10; //
-        get_payload_buffer()[1] = 0x11; //
-        get_payload_buffer()[2] = 0x12; //
-        get_payload_buffer()[3] = 0x13; //
-        get_payload_buffer()[4] = 0x14; //
-        get_payload_buffer()[5] = 0x15; //
-        get_payload_buffer()[6] = 0x16; //
-        get_payload_buffer()[7] = 0x17; //
-        get_payload_buffer()[8] = 0x18; //
-        get_payload_buffer()[9] = 0x19; //
-        send( 10 );
-
-        /*
-        can_message_event ev;
-        ev.sop_mark = 0xEB90;
-        ev.eop_mark = 0x9861;
-        ev.event_type = 1;
-        ev.canid = msg.id;
-        ev.len = msg.len;
-        memcpy(ev.data,msg.data,msg.len);
-        serial_port.write(&ev.device_id, sizeof(can_message_event));
-        */
+        get_payload_buffer()[0] = 0x0;  // Event type
+        get_payload_buffer()[1] = device_id; // Device Id
+        get_payload_buffer()[2] = msg.id >> 24; //
+        get_payload_buffer()[3] = msg.id >> 16; 
+        get_payload_buffer()[4] = msg.id >> 8;
+        get_payload_buffer()[5] = msg.id >> 0;
+        get_payload_buffer()[6] = msg.len;
+        for(size_t i=0;i<msg.len;i++)
+        {
+            get_payload_buffer()[7+i] = msg.data[i];
+        }
+        send( 7 + msg.len );
 
         // Debug
         /*

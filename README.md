@@ -8,6 +8,7 @@ Este repositorio contiene código fuente para implementar una interfaz CANBus ut
 
 - Código fuente para firmware
   - [Test de conexión](./target/can_connection_test/README.md).
+  - [Aplicaciòn "bridge" bàsica](./target/canbus_serial_bridge/README.md).
 - Código fuente del lado del anfitrión (PC x86/x64)
   - [Biblioteca para control y monitoreo de CAN por puerto serie](host/libcanserial/README.md)
 

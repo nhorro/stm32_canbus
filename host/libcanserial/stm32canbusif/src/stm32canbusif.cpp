@@ -1,10 +1,11 @@
 
 #include "stm32canbusif.h"
 
-stm32canbus_serialif::stm32canbus_serialif(const char *dev_name, int baudrate=9600) 
+stm32canbus_serialif::stm32canbus_serialif(const char *dev_name, int baudrate, on_can_message_callback on_event_callback)
     : 
         io(), 
-        port(io, dev_name)
+        port(io, dev_name),
+        on_event_callback(on_event_callback)
 {
     port.set_option( boost::asio::serial_port_base::parity() );	// default none
     port.set_option( boost::asio::serial_port_base::character_size( 8 ) );
@@ -38,19 +39,10 @@ void stm32canbus_serialif::read_handler( const boost::system::error_code& error,
     else 
     {
         can_message_event ev;
-        std::cout << bytes_transferred << ", " << sizeof(can_message_event) << std::endl;
-
         for(size_t i=0;i<bytes_transferred;i++)
         {
             ::protocol::packet_decoder::feed(rx_buffer[i]);
         }
-
-        //std::memcpy(&ev,  boost::asio::buffer_cast<const char*>(buffer.data()), bytes_transferred);        
-        //std::copy_n(boost::asio::buffers_begin(buffer.data()), bytes_transferred, back_inserter(rx_buffer));
-
-        //std::string result = response_get(bytes_transferred);        
-        //std::cout << result;			
-        //buffer.consume(bytes_transferred);
         read_some();
     }
 }
@@ -75,8 +67,33 @@ void stm32canbus_serialif::run()
 
 
 // Packet protocol
-void stm32canbus_serialif::handle_packet(const uint8_t* payload, uint8_t n)
+void stm32canbus_serialif::handle_packet(const uint8_t* payload, size_t n)
 {
+    switch(payload[0])
+    {
+        // Event 0: received message.
+        case 0: 
+        {
+            can_message_event ev;
+
+            ev.device_id = payload[1];
+            ev.canid = (payload[2] << 24) | (payload[3] << 16) | (payload[4] << 8) | (payload[5] << 0);
+            ev.len = payload[6];
+            ev.data[8];
+
+            for(size_t i=0;i<ev.len;i++)
+            {
+                ev.data[i] = payload[7+i];
+            }
+
+            on_event_callback(ev);
+        } break;
+
+        default: {
+            // error, unknown packet
+        }
+    }
+ 
     
 }
 
@@ -92,4 +109,11 @@ void stm32canbus_serialif::set_error(error_code ec)
 void stm32canbus_serialif::handle_connection_lost()
 {
     // Por ahora no hacer nada
+}
+
+
+
+void stm32canbus_serialif::send_impl(const uint8_t* buf, uint8_t n)
+{
+    // TODO: para enviar comandos (ej: inyectar mensaje)
 }
