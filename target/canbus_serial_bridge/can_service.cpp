@@ -1,20 +1,12 @@
 #include "can_service.h"
 
-struct can_message_event
-{   
-    uint16_t sop_mark;     // 0xEB90
-    uint8_t device_id;
-    uint8_t event_type;     // Por ahora un ùnico tipo de evento, se pueden agregar otros: status, error, etc.    
-    uint32_t canid;
-    uint8_t len;
-    uint8_t data[8];
-    uint16_t crc;          // A ser usado más adelante.    
-    uint16_t eop_mark;          // A ser usado más adelante.    
-};
-
-
 can_service::can_service()
     :
+    opcodes
+		{ 
+			
+			{ &can_service::cmd_send_message, opcode_flags::default_flags }
+		},
     led1(LED1),
     led2(LED2),
     sync_counter(0),
@@ -92,44 +84,63 @@ void can_service::can_read_message(int device_id)
             get_payload_buffer()[7+i] = msg.data[i];
         }
         send( 7 + msg.len );
-
-        // Debug
-        /*
-        printf("\nCAN%d RX - CANID: 0x%08x, LEN: %d, Data: ", device_id, msg.id, msg.len);
-        for(int i=0;i<msg.len;i++)
-        {
-            printf("%02x ", msg.data[i]);
-        } */            
     }
 }
 
 void can_service::serial_read_command()
-{
-    /*
+{    
     if (serial_port.readable())
     {
-        can_message_event ev;
-        
-        ev.canid=0x1234;
-        ev.len=2;
-        ev.device_id=0;
-        ev.data[0] = 0xA1;
-        ev.data[1] = 0xA2;
-        
-        can[ev.device_id].write(CANMessage(ev.canid, ev.data, ev.len));
-        led1 = !led1;
-        
-        if (sizeof(can_message_event) == serial_port.read(&ev,sizeof(can_message_event)))
+        static char buf[32] = {0};
+        ssize_t n = this->serial_port.read(buf, sizeof(buf));
+        if (EAGAIN != n)
         {
-            can[ev.device_id].write(CANMessage(ev.canid, ev.data, ev.len));
-            led1 = !led1;
+            char* pbuf = buf;
+            do {
+                feed(*pbuf++);
+            } while(--n);
         }
     }
-    */
+    
 }
 
+
+void can_service::handle_packet(const uint8_t* payload, uint8_t n)
+{
+    // El byte 0 es el código de opcode, el resto el payload. */
+	uint8_t opcode = payload[0];
+
+    (opcode < OPCODE_LAST) ? (this->*(opcodes[opcode].fn))(payload + 1, n - 1) : error_code::unknown_opcode;
+}
+
+void can_service::set_error(error_code ec)
+{
+	if (packet_decoder::error_code::timeout != ec)
+	{
+		//TODO
+	}
+}
+
+
+void can_service::handle_connection_lost()
+{
+    // TODO    
+}
 
 void can_service::send_impl(const uint8_t* buf, uint8_t n)
 {
     serial_port.write(buf,n);
+}
+
+
+
+can_service::error_code can_service::cmd_send_message(const uint8_t* payload, uint8_t n)
+{
+    // TODO: agregar validaciòn...
+    uint32_t device_id = payload[0];
+    const uint32_t canid = (payload[1] << 24) | (payload[2] << 16) | (payload[3] << 8) | (payload[4] << 0);
+    size_t msg_len = payload[5];        
+    can[device_id].write(CANMessage(canid, &payload[6], msg_len));
+
+    return error_code::success;
 }

@@ -12,11 +12,11 @@
 #include "config.h"
 
 #include "protocol.h"
-
+#include "cmd_def.h"
 
 class can_service : 
-    public protocol::packet_encoder
-    //private protocol::packet_decoder
+    private protocol::packet_encoder,
+    private protocol::packet_decoder
 
 {
 public:
@@ -52,6 +52,56 @@ private:
     /* Interfaz serie con PC */
     BufferedSerial serial_port;
 
-    /* Requerido por encoder */
-    void send_impl(const uint8_t* buf, uint8_t n);
+    /* Protocolo de comunicación serie */
+	using opcode_callback = can_service::error_code(can_service::*)(const uint8_t* payload, uint8_t n);
+
+    /** Telecomandos */
+
+    /** Flags de un telecomando 
+     *  Por defecto los telecomandos sólo se reciben y se procesan.
+     */
+	enum opcode_flags {
+		default_flags 				   	= 0x00
+	};
+
+    /** Descriptor de un OPCODE. */
+	struct opcode_descr {
+		opcode_callback fn;
+		uint8_t flags;    
+	};
+        
+    /* Tabla de opcodes */
+	opcode_descr opcodes[OPCODE_LAST];
+
+	/* requeridos por packet_decoder */
+
+    /** Dispatcher de telecomandos recibidos. 
+      * @param payload bytes del paylaod del telecomando.
+      * @param n cantidad de bytes.
+      * @warning Tener mucho cuidado de desde donde se llama a esta función.
+      *          Si se está ejecutando la FSM en el contexto de interrupciones,
+      *          Despachar al contexto de aplicación.
+      */    
+	void handle_packet(const uint8_t* payload, uint8_t n) override;
+
+    /** Establecer código de error de último telecomando procesado.
+      * @param error_code código de error (0=éxito)
+      */    
+	void set_error(error_code ec) override;
+
+    /** Implementación de envío de bytes. En este caso se utiliza puerto serie.
+     * @param buf buffer con datos a transmitir (inmutable).
+     * @param n cantidad de bytes.
+     */
+	void send_impl(const uint8_t* buf, uint8_t n) override;
+
+    /** Manejar errores de conexión (cuando no se recibe HEARTBEAT).
+     */
+	void handle_connection_lost() override;
+
+
+    /* Comandos */
+
+    
+    can_service::error_code cmd_send_message(const uint8_t* payload, uint8_t n);
 };
