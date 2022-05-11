@@ -2,6 +2,8 @@
 
 Este repositorio contiene código fuente para implementar una interfaz CANBus utilizando dos canales de la placa Nucleo 144 STM32F767ZI.
 
+![setup](./doc/assets/CANProtoSTM32.jpg)
+
 **Contenido**
 
 - [Instructivo para armar ambiente de prueba](doc/hw_setup.md) 
