@@ -5,7 +5,7 @@ Este repositorio contiene código fuente para implementar una interfaz CANBus ut
 **Contenido**
 
 - [Instructivo para armar ambiente de prueba](doc/hw_setup.md) 
-
+- [Descripción de protocolo de comunicación](doc/protocol.md)
 - Código fuente para firmware
   - [Test de conexión](./target/can_connection_test/README.md).
   - [Aplicaciòn "bridge" bàsica](./target/canbus_serial_bridge/README.md).
